@@ -3,12 +3,33 @@ import { Ionicons, Feather } from "@expo/vector-icons";
 import * as Font from "expo-font";
 import React, { useEffect, useState } from "react";
 import { Audio } from "expo-av";
+import images from "@/assets/constants/images";
+import * as Haptics from 'expo-haptics';
+import * as SplashScreen from "expo-splash-screen";
+import { ImageBackground } from "react-native";
+import { BlurView } from 'expo-blur';
+import { MaterialCommunityIcons } from "@expo/vector-icons";
+import { useRouter } from "expo-router";  // Import useRouter
+import avatarImage from "@/assets/images/avatar.jpg";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+
+// const sounds = [
+//   { id: "1", name: "Favourite", icon: "heart-outline", library: "Ionicons" },
+//   { id: "2", name: "Recently", icon: "time-outline", library: "Ionicons" },
+//   { id: "3", name: "Log out", icon: "log-out-outline", library: "Ionicons" },
+  
+// ]
 
 export default function ProfileScreen() {
   const [fontLoaded, setFontLoaded] = useState(false);
   const [currentSong, setCurrentSong] = useState<{ title: string; url: string } | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [sound, setSound] = useState<Audio.Sound | null>(null);
+  const router = useRouter(); 
+
+  //
+  const [storedEmail, setStoredEmail] = useState<string | null>(null); // state cho email
+  const [name, setName] = useState<string | null>(null); // state cho name
 
   useEffect(() => {
     async function loadFont() {
@@ -16,13 +37,27 @@ export default function ProfileScreen() {
         "Helvetica-Light": require("@/assets/fonts/helvetica-light-587ebe5a59211.ttf"),
         "Helvetica-Bold": require("@/assets/fonts/Helvetica-Bold.ttf"),
         "Helvetica": require("@/assets/fonts/Helvetica.ttf"),
+        "BebasNeue-Regular": require("@/assets/fonts/BebasNeue-Regular.ttf"),
+        "Oswald-Regular": require("@/assets/fonts/Oswald-VariableFont_wght.ttf"),
+        "PoppinsBold": require("@/assets/fonts/Poppins-Bold.ttf"),
+        "PoppinsRegular": require("@/assets/fonts/Poppins-Regular.ttf"),
       });
       setFontLoaded(true);
+      await SplashScreen.hideAsync();
     }
     loadFont();
   }, []);
 
   useEffect(() => {
+    const fetchEmail = async () => {
+      const storedEmail = await AsyncStorage.getItem('userEmail');
+      if (storedEmail) {
+        const name = storedEmail.split('@')[0];
+        setStoredEmail(storedEmail); // Cập nhật state storedEmail
+        setName(name); // Cập nhật state name
+      }
+    };
+    fetchEmail();
     return sound
       ? () => {
           sound.unloadAsync(); // Giải phóng tài nguyên khi component bị unmount
@@ -38,8 +73,10 @@ export default function ProfileScreen() {
     if (sound) {
       await sound.stopAsync();
       await sound.unloadAsync();
-    }
+      
 
+    }
+    
     const { sound: newSound } = await Audio.Sound.createAsync({ uri: url });
     setSound(newSound);
     await newSound.playAsync();
@@ -58,28 +95,51 @@ export default function ProfileScreen() {
   };
 
   return (
+    <ImageBackground source={images.explore} style={styles.explore}>
+        <View style={styles.overlay}>
     <View style={styles.container}>
-      {/* Header */}
-      <View style={styles.header}>
-        <Text style={styles.title}>Profile</Text>
-        <Ionicons name="settings-outline" size={24} color="#FED2EB" />
-      </View>
+     
+      
 
       {/* Avatar + Edit Button */}
       <View style={styles.avatarContainer}>
-        <Image source={{ uri: "https://via.placeholder.com/100" }} style={styles.avatar} />
+        {/* <Image source={{ uri: "https://via.placeholder.com/100" }} style={styles.avatar} /> */}
+        <Image source={avatarImage} style={styles.avatar} />
+
         <TouchableOpacity style={styles.editButton}>
           <Feather name="edit" size={18} color="white" />
         </TouchableOpacity>
       </View>
 
       {/* Profile Info */}
-      <View style={styles.infoCard}>
-        <Text style={styles.name}>Trúc Quỳnh</Text>
-        <Text style={styles.email}>quynh@gmail.com</Text>
+      <View style={styles.nameCard}>
+      <BlurView intensity={30} tint="light" style={styles.blurContainer}>
+     
+        <Text style={styles.name}>{name}</Text>
+        <Text style={styles.email}>{storedEmail}</Text>
+        </BlurView>
       </View>
+{/* 
+      <View style={styles.gridContainer}>
+  {sounds.map((item) => (
+    <TouchableOpacity key={item.id} style={styles.infoCard}
+       onPress={() => {
+            if (item.name === "Favourite") {
+              router.push("/favourite"); // Điều hướng đến FavouriteScreen
+            }
+       } */}
+      {/* }> */}
+      {/* {item.library === "Ionicons" ? (
+        <Ionicons name={item.icon as keyof typeof Ionicons.glyphMap} size={40} color="white" />
+      ) : (
+        <MaterialCommunityIcons name={item.icon as keyof typeof MaterialCommunityIcons.glyphMap} size={40} color="white" />
+      )}
+      <Text style={styles.cardText}>{item.name}</Text>
+    </TouchableOpacity>
+  ))} */}
+</View>
 
-      {/* Options */}
+      {/* Options
       <View style={styles.optionsContainer}>
         <TouchableOpacity
           style={styles.optionButton}
@@ -96,112 +156,132 @@ export default function ProfileScreen() {
           <Ionicons name="time-outline" size={32} color="#F6E9F3FF" />
           <Text style={styles.optionText}>Recently</Text>
         </TouchableOpacity>
-      </View>
+      </View> */}
 
-      {/* Mini Player */}
-      {currentSong && (
-        <View style={styles.miniPlayer}>
-          <Image source={{ uri: "https://example.com/song-thumbnail.jpg" }} style={styles.miniPlayerImage} />
-          <Text style={styles.miniPlayerText}>{currentSong.title}</Text>
-          <TouchableOpacity onPress={togglePlayback}>
-            <Ionicons name={isPlaying ? "pause" : "play"} size={28} color="white" />
-          </TouchableOpacity>
-        </View>
-      )}
+      
     </View>
+    
+    </ImageBackground>
   );
 }
 
 const styles = StyleSheet.create({
+  explore: { 
+    flex: 1, 
+    resizeMode: "cover",
+    justifyContent: "center",
+    alignItems: "center"
+  },
+  overlay: { 
+    flex: 1, 
+    width: "100%", 
+    backgroundColor: "rgba(0, 0, 0, 0.1)",
+    backdropFilter: "blur(10px)",
+  },
   container: {
     flex: 1,
-    backgroundColor: "#FED2EB",
-    padding: 24,
   },
-  header: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 24,
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: "bold",
-    color: "#4A4A4A",
-    fontFamily: "Helvetica",
-  },
+ 
   avatarContainer: {
     alignItems: "center",
-    marginBottom: 24,
+    marginBottom: 50,
+    marginTop:80,
   },
   avatar: {
-    width: 96,
-    height: 96,
-    borderRadius: 48,
-    borderWidth: 4,
-    borderColor: "#C2185B",
+    width: 156,
+    height: 156,
+    borderRadius: 78,
+    borderWidth: 9,
+    backgroundColor: "rgba(255, 255, 255, 0)", // Lớp phủ trong suốt
+    //borderWidth: 9,
+    marginBottom: 2,
+   borderColor: "rgba(255, 255, 255, 0.2)",
+   shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 10,
+    marginTop: 100,
   },
   editButton: {
-    backgroundColor: "#C2185B",
+    backgroundColor: "rgba(255, 255, 255, 0.2)",
+    borderColor: "rgba(255, 255, 255, 0.2)",
     padding: 8,
     borderRadius: 20,
-    marginTop: 8,
+    marginTop: 0,
   },
-  infoCard: {
-    backgroundColor: "white",
+  nameCard: {
+ //   backgroundColor: "#C294B7",
+ borderRadius: 30,
+ //overflow: "hidden", 
+    // padding: 16,
+    // borderRadius: 12,
+     shadowColor: "#000",
+     shadowOpacity: 0.1,
+    // shadowRadius: 6,
+    // elevation: 4,
+    marginLeft:40,
+    marginTop: 0,
+  },
+  blurContainer: {
     padding: 16,
-    borderRadius: 12,
-    shadowColor: "#000",
-    shadowOpacity: 0.1,
-    shadowRadius: 6,
-    elevation: 4,
+    borderRadius: 20,
+    flexDirection: "column",
+    alignItems: "center",
+    justifyContent: "center",
+    width: 330, // Điều chỉnh theo ý thích
+    height: 100,
+    backgroundColor: "rgba(255, 255, 255, 0)", // Lớp phủ trong suốt
+    borderWidth: 9,
+   borderColor: "rgba(255, 255, 255, 0.2)", // Viền nhẹ
   },
   name: {
-    fontSize: 18,
-    fontWeight: "600",
-    color: "#4A4A4A",
-    fontFamily: "Helvetica-Bold",
+    fontSize: 25,
+    color: "#FFFFFFFA",
+    fontFamily: "PoppinsBold",
   },
   email: {
-    color: "#555",
-    fontFamily: "Helvetica-Light",
+    color: "#FFFFFFFF",
+    fontFamily: "PoppinsRegular",
   },
-  optionsContainer: {
-    marginTop: 24,
-  },
-  optionButton: {
-    backgroundColor: "#F8BBD0",
-    padding: 16,
-    borderRadius: 12,
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 12,
-  },
-  optionText: {
-    marginLeft: 12,
-    fontSize: 16,
-    color: "#4A4A4A",
-    fontFamily: "Helvetica-Bold",
-  },
-  miniPlayer: {
-    position: "absolute",
-    bottom: 0,
-    width: "100%",
-    backgroundColor: "#C2185B",
-    flexDirection: "row",
-    alignItems: "center",
-    padding: 12,
-  },
-  miniPlayerImage: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    marginRight: 12,
-  },
-  miniPlayerText: {
-    flex: 1,
-    color: "white",
-    fontSize: 16,
-    fontWeight: "bold",
-  },
+  
+  // optionButton: {
+  //   backgroundColor: "#F8BBD0",
+  //   padding: 16,
+  //   borderRadius: 12,
+  //   flexDirection: "row",
+  //   alignItems: "center",
+  //   marginBottom: 12,
+  // },
+  // optionText: {
+  //   marginLeft: 12,
+  //   fontSize: 16,
+  //   color: "#4A4A4A",
+  //   fontFamily: "Helvetica-Bold",
+  // },
+  // gridContainer: {
+  //   flexDirection: "row",
+  //   flexWrap: "wrap",
+  //   justifyContent: "center",
+  //   marginTop: 25,
+  // },
+  // infoCard: {
+  //   width: 330,
+  //   height: 100,
+  //   backgroundColor: "rgba(255, 255, 255, 0.2)",
+  //   margin: 25,
+  //   borderRadius: 20,
+  //   justifyContent: "center",
+  //   alignItems: "center",
+  //   shadowColor: "rgba(255, 255, 255, 0.5)",
+  //   shadowOffset: { width: 0, height: 4 },
+  //   shadowOpacity: 0.3,
+  //   shadowRadius: 10,
+  //   marginTop:0,
+    
+  // },
+  // cardText: {
+  //   color: "white",
+  //   fontSize: 18,
+  //   marginTop: 5,
+  //   fontFamily: "PoppinsRegular",
+  // },
 });

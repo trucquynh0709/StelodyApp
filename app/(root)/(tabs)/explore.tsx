@@ -47,7 +47,7 @@ export default function DiscoverScreen() {
       }
 
       await AsyncStorage.setItem("audioUrl", data.url);
-      router.push({ pathname: "/profile", params: { profileName: data.title } });
+      await AsyncStorage.setItem("songTitle", data.title);
       router.push("/play");
     } catch (error) {
       Alert.alert("Lỗi", "Không thể tìm thấy bài hát!");

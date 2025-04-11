@@ -4,32 +4,51 @@ import Svg, { Path } from "react-native-svg";
 import * as Font from "expo-font";
 import React, { useEffect, useState } from "react";
 import { Ionicons } from "@expo/vector-icons";
+import * as SplashScreen from "expo-splash-screen";
 
 export default function SignUpScreen() {
   const router = useRouter();
-  const [fontLoaded, setFontLoaded] = useState(false);
+  const [fontsLoaded, setFontsLoaded] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
 
   useEffect(() => {
-    async function loadFont() {
-      await Font.loadAsync({
-        "Helvetica-Light": require("@/assets/fonts/helvetica-light-587ebe5a59211.ttf"),
-        "Helvetica-Bold": require("@/assets/fonts/Helvetica-Bold.ttf"),
-        "Helvetica": require("@/assets/fonts/Helvetica.ttf"),
-        "BebasNeue-Regular": require("@/assets/fonts/BebasNeue-Regular.ttf"),
-        "Oswald-Regular": require("@/assets/fonts/Oswald-VariableFont_wght.ttf"),
-        "PoppinsBold": require("@/assets/fonts/Poppins-Bold.ttf"),
-        "PoppinsRegular": require("@/assets/fonts/Poppins-Regular.ttf"),
-        "Montse": require("@/assets/fonts/Montserrat-VariableFont_wght.ttf"),
-      });
-      setFontLoaded(true);
+    async function prepare() {
+      try {
+        // Giữ splash screen hiển thị
+        await SplashScreen.preventAutoHideAsync();
+
+        // Load fonts
+        await Font.loadAsync({
+          'PoppinsBold': require('../../assets/fonts/Poppins-Bold.ttf'),
+          'PoppinsRegular': require('../../assets/fonts/Poppins-Regular.ttf'),
+        });
+      } catch (error) {
+        console.error("Error loading fonts:", error);
+      } finally {
+        setFontsLoaded(true);
+      }
     }
-    loadFont();
+
+    prepare();
   }, []);
 
-  const handleSignUp = () => {
+  useEffect(() => {
+    if (fontsLoaded) {
+      // Ẩn splash screen khi fonts đã load xong
+      async function hideSplash() {
+        await SplashScreen.hideAsync();
+      }
+      hideSplash();
+    }
+  }, [fontsLoaded]);
+
+  if (!fontsLoaded) {
+    return null;
+  }
+
+  const handleSignUp = async () => {
     if (!email || !password || !confirmPassword) {
       Alert.alert("Error", "Please fill in all fields!");
       return;
@@ -38,9 +57,27 @@ export default function SignUpScreen() {
       Alert.alert("Error", "Passwords do not match!");
       return;
     }
+    try {
+      const request = `${email},${password}`;
+      const response = await fetch(`http://10.0.2.2:8080/api/signup/${request}`, {
+        
+        
+      });
+  
+      const data = await response.json();
+  
+      if (response.ok) {
+        Alert.alert("Success", "Account created successfully!");
+        router.push("/auth/sign-in");
+      } else {
+        Alert.alert("Signup Failed", data.message || "An error occurred.");
+      }
+    } catch (error) {
+      console.error("Signup error:", error);
+      Alert.alert("Error", "Could not connect to server.");
+    }
 
-    Alert.alert("Success", "Account created successfully!");
-    router.push("/auth/sign-in"); // Redirect to sign-in screen after successful registration
+    
   };
 
   return (
@@ -122,7 +159,7 @@ const styles = StyleSheet.create({
     textAlign: 'left',
     width: '100%',
     fontFamily: "PoppinsBold",
-    marginBottom: 80,
+    marginBottom: 90,
     left: 7,
   },
   input: {
@@ -133,6 +170,7 @@ const styles = StyleSheet.create({
     marginBottom: 20,
     fontFamily: "PoppinsBold",
     color: '#D9D9D9',
+    fontSize: 16,
   },
   signUpContainer: {
     flexDirection: "row", // Hiển thị chữ và mũi tên cùng hàng

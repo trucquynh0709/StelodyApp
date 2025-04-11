@@ -4,6 +4,7 @@ import Svg, { Path } from "react-native-svg";
 import * as Font from "expo-font";
 import React, { useEffect, useState } from "react";
 import { Ionicons } from "@expo/vector-icons";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 export default function SignInScreen() {
   const router = useRouter();
@@ -28,13 +29,30 @@ export default function SignInScreen() {
     loadFont();
   }, []);
 
-  const handleSignIn = () => {
+  const handleSignIn = async () => {
     if (!email || !password) {
       Alert.alert("Error", "Please fill in all fields!");
       return;
     }
-    router.push("/(root)/(tabs)/explore")
-   
+    try {
+      const request = `${email},${password}`;
+      const response = await fetch(`http://10.0.2.2:8080/api/signin/${request}`, {
+        method: "GET",
+      });
+      
+    const data = await response.json();
+      
+          if (response.ok) {
+            await AsyncStorage.setItem('userEmail', email);
+            Alert.alert("Success", "Account created successfully!");
+            router.push("/(root)/(tabs)/explore")
+          } else {
+            Alert.alert("Signup Failed", data.message || "An error occurred.");
+          }
+        } catch (error) {
+          console.error("Signup error:", error);
+          Alert.alert("Error", "Could not connect to server.");
+        }
     
   };
 
